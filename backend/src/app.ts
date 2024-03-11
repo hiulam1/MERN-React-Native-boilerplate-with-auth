@@ -6,10 +6,8 @@ import morgan from 'morgan';
 import { auth } from "express-openid-connect"
 import config from './config/auth.js';
 
-
 const app = express();
 const PORT = 3000;
-
 
 
 app.get('/', (req, res) => {
