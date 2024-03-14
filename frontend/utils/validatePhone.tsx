@@ -17,3 +17,11 @@ export const modifyInput = (input: string) => {
   formattedInput = `${formattedInput.slice(0, 3)} ${formattedInput.slice(3, 6)} ${formattedInput.slice(6, 8)} ${formattedInput.slice(8, 10)}`;
   return formattedInput.trim();
 };
+
+export const createUsableInput = (input: string) => {
+  return "+41" + input.replace(/\s/g, "").slice(1);
+};
+
+export const checkOTPDigits = (otp: string) => {
+  return otp.length === 6;
+};

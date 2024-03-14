@@ -1,12 +1,25 @@
 import { StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import { Text, View } from "@/components/Themed";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
-import { checkPhoneIfValid, modifyInput } from "@/utils/validatePhone";
-import { Link } from "expo-router";
-import Colors from "@/constants/Colors";
+import {
+  checkPhoneIfValid,
+  modifyInput,
+  createUsableInput,
+} from "@/utils/validatePhone";
+import axios from "axios";
+import { useNavigation } from "@react-navigation/native";
+import { OTPScreenProps, RootStackParamList } from "./_layout";
+import {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from "@react-navigation/native-stack";
 
-const login = () => {
+const Login: React.FC<
+  NativeStackScreenProps<RootStackParamList, "Login">
+> = () => {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList, "Login">>();
+
   const [input, setIput] = useState("");
   const [valid, setValid] = useState(false);
 
@@ -20,6 +33,21 @@ const login = () => {
       setIput(formattedInput);
     }
   };
+
+  const handleSubmit = async () => {
+    console.log("input" + input);
+    const readyPhoneNumber = createUsableInput(input);
+    console.log("phone number sent: " + readyPhoneNumber);
+    navigation.navigate("OTP", { phoneNumber: readyPhoneNumber });
+    try {
+      await axios.post("http://localhost:3002/api/auth/send-otp", {
+        phoneNumber: readyPhoneNumber,
+      });
+    } catch (error) {
+      console.error("Error sending OTP", error);
+    }
+  };
+
   return (
     <View className="flex-1 bg-light-grey justify-center items-center">
       <Text className="text-[20px] mb-6 text-white">
@@ -42,12 +70,21 @@ const login = () => {
         ></TextInput>
       </View>
       {/* when clicked, check mongodb for phone number, then send oTP */}
-      <Link href={"/OTP"} asChild>
-        <TouchableOpacity className="bg-white p-3 rounded-md">
-          <Text>Send OTP</Text>
-        </TouchableOpacity>
-      </Link>
+      <TouchableOpacity
+        className="bg-white p-3 rounded-md"
+        style={valid ? {} : styles.buttonDisabled}
+        disabled={!valid}
+        onPress={() => handleSubmit()}
+      >
+        <Text>Send OTP</Text>
+      </TouchableOpacity>
     </View>
   );
 };
-export default login;
+export default Login;
+const styles = StyleSheet.create({
+  buttonDisabled: {
+    backgroundColor: "gray",
+    opacity: 0.5,
+  },
+});

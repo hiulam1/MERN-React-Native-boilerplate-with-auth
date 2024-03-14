@@ -5,19 +5,26 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import {
+  NativeStackScreenProps,
+  createNativeStackNavigator,
+} from "@react-navigation/native-stack";
 
 import { useColorScheme } from "@/components/useColorScheme";
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from "expo-router";
+import Login from "./Login";
+import OTP from "./OTP";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+export type RootStackParamList = {
+  Login: undefined; // No parameters for the Login route
+  OTP: { phoneNumber: string }; // The OTP route expects a phone number
+};
+const RootStack = createNativeStackNavigator<RootStackParamList>();
+export type OTPScreenProps = NativeStackScreenProps<RootStackParamList, "OTP">;
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -42,16 +49,20 @@ export default function RootLayout() {
 
   return <RootLayoutNav />;
 }
-
+const Stack = createNativeStackNavigator();
 function RootLayoutNav() {
   const colorScheme = "dark";
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="login" />
-        <Stack.Screen name="OTP" />
-      </Stack>
+      <RootStack.Navigator
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <RootStack.Screen name="Login" component={Login} />
+        <RootStack.Screen name="OTP" component={OTP} />
+      </RootStack.Navigator>
     </ThemeProvider>
   );
 }

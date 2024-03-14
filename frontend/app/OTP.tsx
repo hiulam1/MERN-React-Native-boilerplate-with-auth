@@ -9,11 +9,20 @@ import {
   StyleSheet,
 } from "react-native";
 import React, { useEffect, useState } from "react";
+import { checkOTPDigits } from "@/utils/validatePhone";
+import axios from "axios";
+import { RouteProp } from "@react-navigation/native";
+import { RootStackParamList } from "./_layout";
 
-const OTP = () => {
+type OTPScreenRouteProp = RouteProp<RootStackParamList, "OTP">;
+type Props = {
+  route: OTPScreenRouteProp;
+};
+
+const OTP: React.FC<Props> = ({ route }) => {
   const [buttonDisabled, setButtonDisabled] = useState(true);
   const [seconds, setSeconds] = useState(30);
-
+  const { phoneNumber } = route.params;
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined = undefined;
 
@@ -29,6 +38,33 @@ const OTP = () => {
     return () => clearInterval(interval);
   }, [seconds]);
 
+  const sendNewCode = async () => {
+    resetCounter();
+    console.log("sending new code");
+    try {
+      await axios.post("http://localhost:3002/api/auth/send-otp", {
+        phoneNumber: phoneNumber,
+      });
+    } catch (error) {
+      console.error("Error sending OTP", error);
+    }
+  };
+
+  const handleVerificationCode = async (phoneNumber: string, OTP: string) => {
+    console.log(phoneNumber, OTP);
+    if (checkOTPDigits(OTP)) {
+      try {
+        await axios.post("http://localhost:3002/api/auth/verify-otp", {
+          phoneNumber: phoneNumber,
+          otp: OTP,
+        });
+      } catch (error) {
+        console.error("Error verifying OTP", error);
+      }
+    } else {
+      console.error("Invalid OTP");
+    }
+  };
   const resetCounter = () => {
     setSeconds(30);
     setButtonDisabled(true);
@@ -45,10 +81,11 @@ const OTP = () => {
             keyboardType="numeric"
             placeholder="*      *     *     *     *     *"
             placeholderTextColor={"white"}
+            onChangeText={(OTP) => handleVerificationCode(phoneNumber, OTP)}
           ></TextInput>
           <TouchableOpacity
             className="bg-white p-3 bottom-12 rounded-md absolute"
-            onPress={resetCounter}
+            onPress={sendNewCode}
             disabled={buttonDisabled}
             style={buttonDisabled ? styles.buttonDisabled : {}}
           >
