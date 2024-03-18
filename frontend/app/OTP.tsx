@@ -23,6 +23,7 @@ const OTP: React.FC<Props> = ({ route }) => {
   const [buttonDisabled, setButtonDisabled] = useState(true);
   const [seconds, setSeconds] = useState(30);
   const { phoneNumber } = route.params;
+
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined = undefined;
 
@@ -45,6 +46,7 @@ const OTP: React.FC<Props> = ({ route }) => {
       await axios.post("http://localhost:3002/api/auth/send-otp", {
         phoneNumber: phoneNumber,
       });
+      console.log("correct number");
     } catch (error) {
       console.error("Error sending OTP", error);
     }
@@ -52,23 +54,23 @@ const OTP: React.FC<Props> = ({ route }) => {
 
   const handleVerificationCode = async (phoneNumber: string, OTP: string) => {
     console.log(phoneNumber, OTP);
-    if (checkOTPDigits(OTP)) {
-      try {
+    try {
+      if (checkOTPDigits(OTP)) {
         await axios.post("http://localhost:3002/api/auth/verify-otp", {
           phoneNumber: phoneNumber,
           otp: OTP,
         });
-      } catch (error) {
-        console.error("Error verifying OTP", error);
       }
-    } else {
-      console.error("Invalid OTP");
+    } catch (error) {
+      console.log(error);
     }
   };
+
   const resetCounter = () => {
     setSeconds(30);
     setButtonDisabled(true);
   };
+
   return (
     <KeyboardAvoidingView className="flex-1 bg-light-grey">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} className="flex-1">
