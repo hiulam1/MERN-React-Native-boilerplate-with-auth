@@ -13,7 +13,6 @@ const connectToMongoDB = async () => {
     console.error("Error connecting to MongoDB:", error);
   }
 };
-connectToMongoDB();
 
 connectToMongoDB().then(() => {
   app.listen(PORT, () => {
