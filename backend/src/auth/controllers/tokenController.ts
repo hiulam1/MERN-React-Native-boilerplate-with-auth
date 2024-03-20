@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import "dotenv/config";
 
 export const refreshToken = async (req: Request, res: Response) => {
-  const refreshToken = req.headers["x-refresh-token"];
+  const refreshToken = req.headers["x-refresh-token"] as string | undefined;
   if (!refreshToken)
     return res.status(401).json({ message: "Refresh Token is required" });
 

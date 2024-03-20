@@ -1,10 +1,10 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import config from "./config/auth.js";
-import authRoutes from "./routes/authRoutes.js";
+import config from "./auth/config/auth.js";
+import authRoutes from "./auth/routes/authRoutes.js";
 import { limiter } from "./middlewares/rateLimiting.js";
-import userRoutes from "./routes/userRoutes.js";
+import userRoutes from "./users/routes/userRoutes.js";
 import helmet from "helmet";
 import { Request, Response, NextFunction } from "express";
 

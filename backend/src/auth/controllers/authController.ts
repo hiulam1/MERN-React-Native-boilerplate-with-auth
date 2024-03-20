@@ -1,7 +1,5 @@
-import { sendOTP, verifyOTP } from "../../services/twilio.js";
-import { Request, Response } from "express";
-import redisClient from "../../services/redis.js";
-import { randomBytes } from "crypto";
+import { sendOTP, verifyOTP } from "../utils/twilio.js";
+import { NextFunction, Request, Response } from "express";
 
 export const SendOTPToUser = async (req: Request, res: Response) => {
   try {
@@ -15,23 +13,24 @@ export const SendOTPToUser = async (req: Request, res: Response) => {
   }
 };
 
-export const VerifyOTP = async (req: Request, res: Response) => {
+declare global {
+  namespace Express {
+    interface Request {
+      isVerified?: boolean;
+    }
+  }
+}
+export const VerifyOTP = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { phoneNumber, otp } = req.body;
     const isVerified = await verifyOTP(phoneNumber, otp);
     if (isVerified) {
-      const sessionToken = randomBytes(48).toString("hex");
-      await redisClient.set(
-        `session:${sessionToken}`,
-        JSON.stringify({ phoneNumber }),
-        { EX: 600 }
-      );
-      res
-        .status(200)
-        .json({
-          message: "OTP verified successfully",
-          sessionToken: sessionToken,
-        });
+      req.isVerified = true;
+      next();
     } else {
       res.status(400).json({ message: "Invalid OTP" });
     }

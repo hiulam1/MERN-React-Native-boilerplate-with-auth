@@ -1,6 +1,6 @@
 import express from "express";
-import { create } from "../controllers/userController/Create.js";
-import { generateToken } from "../middlewares/generateJWT.js";
+import { create } from "../controllers/Create.js";
+import { generateToken } from "../../auth/middlewares/generateJWT.js";
 
 const router = express.Router();
 

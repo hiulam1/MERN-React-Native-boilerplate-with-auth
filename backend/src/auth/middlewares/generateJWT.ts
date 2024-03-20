@@ -7,33 +7,31 @@ export const generateToken = async (
   res: Response,
   next: NextFunction
 ) => {
-  const JWT_SECRET = process.env.JWT_SECRET!;
-  const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
+  const privateKey = process.env.JWT_PRIVATE_KEY!.replace(/\\n/g, "\n")!;
   if (!req.userExists) {
     return next();
   }
-  if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
-    console.error("JWT_SECRET is not defined.");
+  if (!privateKey) {
+    console.error("Private Key is not defined.");
     return res.status(500).json({ message: "Internal server error" });
   }
 
   try {
-    const accessToken = jwt.sign({ id: req.userExists._id }, JWT_SECRET, {
+    const accessToken = jwt.sign({ id: req.userExists._id }, privateKey, {
       expiresIn: "1h",
       algorithm: "RS256",
     });
-    const refreshToken = jwt.sign(
-      { id: req.userExists._id },
-      JWT_REFRESH_SECRET,
-      {
-        expiresIn: "7d",
-      }
-    );
+    console.log("Access Token: ", accessToken);
+    const refreshToken = jwt.sign({ id: req.userExists._id }, privateKey, {
+      expiresIn: "7d",
+      algorithm: "RS256",
+    });
     res.json({
       accessToken: accessToken,
       refreshToken: refreshToken,
       message: "authentication successful",
     });
+    console.log("response sent");
   } catch (error) {
     console.error("Error generating token: ", error);
     res.status(500).json({ message: "Failed to generate token" });

@@ -8,11 +8,14 @@ import {
   Keyboard,
   StyleSheet,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { checkOTPDigits } from "@/utils/validatePhone";
 import axios from "axios";
-import { RouteProp } from "@react-navigation/native";
-import { RootStackParamList } from "./_layout";
+import { RouteProp, useNavigation } from "@react-navigation/native";
+import { RootStackParamList } from "../_layout";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import useCountdownTimer from "@/hooks/useCountdownTimer";
 
 type OTPScreenRouteProp = RouteProp<RootStackParamList, "OTP">;
 type Props = {
@@ -20,24 +23,11 @@ type Props = {
 };
 
 const OTP: React.FC<Props> = ({ route }) => {
-  const [buttonDisabled, setButtonDisabled] = useState(true);
-  const [seconds, setSeconds] = useState(30);
   const { phoneNumber } = route.params;
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList, "OTP">>();
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout | undefined = undefined;
-
-    if (seconds > 0) {
-      interval = setInterval(() => {
-        setSeconds((prevSeconds) => prevSeconds - 1);
-      }, 1000);
-    } else {
-      setButtonDisabled(false);
-      clearInterval(interval);
-    }
-
-    return () => clearInterval(interval);
-  }, [seconds]);
+  const { seconds, resetCounter, disabled } = useCountdownTimer(30);
 
   const sendNewCode = async () => {
     resetCounter();
@@ -52,29 +42,37 @@ const OTP: React.FC<Props> = ({ route }) => {
     }
   };
 
-  const handleVerificationCode = async (phoneNumber: string, OTP: string) => {
+  const storeSession = async (token: string) => {
+    try {
+      await AsyncStorage.setItem("sessionToken", token);
+    } catch (error) {
+      console.error("Error storing the session token", error);
+    }
+  };
+
+  const handleVerificationCode = async (OTP: string) => {
     console.log(phoneNumber, OTP);
     try {
       if (checkOTPDigits(OTP)) {
-        await axios.post("http://localhost:3002/api/auth/verify-otp", {
-          phoneNumber: phoneNumber,
-          otp: OTP,
-        });
+        const response = await axios.post(
+          "http://localhost:3002/api/auth/verify-otp",
+          {
+            phoneNumber: phoneNumber,
+            otp: OTP,
+          }
+        );
+        storeSession(response.data.sessionToken);
+        navigation.navigate("Registration");
       }
     } catch (error) {
       console.log(error);
     }
   };
 
-  const resetCounter = () => {
-    setSeconds(30);
-    setButtonDisabled(true);
-  };
-
   return (
-    <KeyboardAvoidingView className="flex-1 bg-light-grey">
+    <KeyboardAvoidingView className="flex-1">
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} className="flex-1">
-        <View className="flex-1 justify-center items-center">
+        <View className="flex-1 justify-center items-center bg-light-grey">
           <Text className="text-[20px] mb-6 text-white font-bold">
             Enter below the six digit code
           </Text>
@@ -83,15 +81,15 @@ const OTP: React.FC<Props> = ({ route }) => {
             keyboardType="numeric"
             placeholder="*      *     *     *     *     *"
             placeholderTextColor={"white"}
-            onChangeText={(OTP) => handleVerificationCode(phoneNumber, OTP)}
+            onChangeText={(OTP) => handleVerificationCode(OTP)}
           ></TextInput>
           <TouchableOpacity
             className="bg-white p-3 bottom-12 rounded-md absolute"
             onPress={sendNewCode}
-            disabled={buttonDisabled}
-            style={buttonDisabled ? styles.buttonDisabled : {}}
+            disabled={disabled}
+            style={disabled ? styles.buttonDisabled : {}}
           >
-            {buttonDisabled ? (
+            {disabled ? (
               <Text>Send new code in {seconds} seconds</Text>
             ) : (
               <Text>Send new code</Text>

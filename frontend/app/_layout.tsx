@@ -1,68 +1,70 @@
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
-import { useFonts } from "expo-font";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import {
-  NativeStackScreenProps,
-  createNativeStackNavigator,
-} from "@react-navigation/native-stack";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import { useColorScheme } from "@/components/useColorScheme";
-import Login from "./Login";
-import OTP from "./OTP";
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+import Login from "./screens/Login";
+import OTP from "./screens/OTP";
+import Registration from "./screens/Registration";
+import AuthenticatedStackScreens from "./AuthenticatedStack";
+import checkAuthTokenValidity from "@/utils/checkTokenValidity";
 
 export type RootStackParamList = {
-  Login: undefined; // No parameters for the Login route
-  OTP: { phoneNumber: string }; // The OTP route expects a phone number
+  Login: undefined;
+  OTP: { phoneNumber: string };
+  Registration: undefined;
+  AuthenticatedStack: undefined;
 };
-const RootStack = createNativeStackNavigator<RootStackParamList>();
-export type OTPScreenProps = NativeStackScreenProps<RootStackParamList, "OTP">;
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-    ...FontAwesome.font,
-  });
-
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
+    SplashScreen.preventAutoHideAsync();
+    async function checkAuth() {
+      try {
+        const isTokenValid = await checkAuthTokenValidity();
+        setIsAuthenticated(isTokenValid!);
+        console.log("isTokenValid", isTokenValid);
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setLoading(false);
+        SplashScreen.hideAsync();
+      }
     }
-  }, [loaded]);
 
-  if (!loaded) {
-    return null;
+    checkAuth();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
-
-  return <RootLayoutNav />;
-}
-const Stack = createNativeStackNavigator();
-function RootLayoutNav() {
-  const colorScheme = "dark";
+  const RootStack = createNativeStackNavigator<RootStackParamList>();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <RootStack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <RootStack.Screen name="Login" component={Login} />
-        <RootStack.Screen name="OTP" component={OTP} />
-      </RootStack.Navigator>
-    </ThemeProvider>
+    <RootStack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      {isAuthenticated ? (
+        <RootStack.Screen
+          name="AuthenticatedStack"
+          component={AuthenticatedStackScreens}
+        />
+      ) : (
+        <>
+          <RootStack.Screen name="Login" component={Login} />
+          <RootStack.Screen name="OTP" component={OTP} />
+          <RootStack.Screen name="Registration" component={Registration} />
+        </>
+      )}
+    </RootStack.Navigator>
   );
 }

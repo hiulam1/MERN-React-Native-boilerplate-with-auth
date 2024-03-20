@@ -1,22 +1,27 @@
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import "dotenv/config";
+import extractTokenFromHeader from "@/users/utils/extractAccessToken.js";
 
 export const verifyToken = (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.headers["authorization"]?.split(" ")[1];
+  const accessToken = extractTokenFromHeader(req);
 
-  if (!token) {
+  if (!accessToken) {
     return res
       .status(403)
-      .json({ message: "A token is required for authentication" });
+      .json({ message: "An access token is required for authentication" });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    const publicKey = process.env.JWT_PUBLIC_KEY!.replace(/\\n/g, "\n")!;
+
+    const decoded = jwt.verify(accessToken, publicKey!, {
+      algorithms: ["RS256"],
+    });
     req.userExists = decoded;
     next();
   } catch (error) {
