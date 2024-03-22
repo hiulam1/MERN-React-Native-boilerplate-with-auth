@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import redisClient from "../../services/redis.js";
 import { Request, Response, NextFunction } from "express";
 
-export const cacheNumber = async (
+export const generateSessionToken = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -11,21 +11,22 @@ export const cacheNumber = async (
     if (req.userExists) {
       next();
     } else {
-      const { phoneNumber } = req.body;
+      const { phoneNumber, currentStep } = req.body;
       const sessionToken = randomBytes(48).toString("hex");
       await redisClient.set(
         `session:${sessionToken}`,
         JSON.stringify({
           phoneNumber: phoneNumber,
           sessionToken: sessionToken,
+          currentStep: currentStep,
         }),
         {
-          EX: 600,
+          EX: 86400,
         }
       );
       res.status(200).json({
         success: true,
-        message: "phoneNumber cached successfully",
+        message: "session Token generated successfully",
         sessionToken: sessionToken,
       });
     }

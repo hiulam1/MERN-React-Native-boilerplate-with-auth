@@ -2,8 +2,7 @@ import mongoose from "mongoose";
 import User from "../models/User.js";
 import { Request, Response, NextFunction } from "express";
 import redisClient from "../../services/redis.js";
-import extractTokenFromHeader from "../utils/extractAccessToken.js";
-
+import extractTokenFromHeader from "../../auth/utils/extractAccessToken.js";
 declare global {
   namespace Express {
     interface Request {
@@ -50,7 +49,7 @@ export const create = async (
     await user.save();
     await redisClient.del(`session:${sessionToken}`);
     console.log("user saved");
-    req.userExists;
+    req.userExists = user;
     next();
   } catch (error) {
     res.status(500).json({

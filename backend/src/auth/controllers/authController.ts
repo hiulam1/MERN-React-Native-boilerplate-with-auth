@@ -4,7 +4,7 @@ import { NextFunction, Request, Response } from "express";
 export const SendOTPToUser = async (req: Request, res: Response) => {
   try {
     const { phoneNumber } = req.body;
-    const response = await sendOTP(phoneNumber);
+    await sendOTP(phoneNumber);
     res.status(200).json({
       message: "OTP sent successfully",
     });

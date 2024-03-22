@@ -1,6 +1,4 @@
-import { randomBytes } from "crypto";
 import User from "../../users/models/User.js";
-import redisClient from "../../services/redis.js";
 import { Request, Response, NextFunction } from "express";
 
 declare global {

@@ -6,17 +6,25 @@ import {
   StyleSheet,
 } from "react-native";
 import React, { useState } from "react";
-import RegistrationLayout from "../RegistrationLayout";
+import RegistrationLayout from "./RegistrationLayout";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { validateEmail } from "@/utils/validateEmail";
 import storeTokens from "@/utils/storeTokens";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "./StackNavigator";
+import { router } from "expo-router";
 
 const Registration = () => {
   const [input, setIput] = useState("");
   const [valid, setValid] = useState(false);
   const [error, setError] = useState("");
 
+  const navigation =
+    useNavigation<
+      NativeStackNavigationProp<RootStackParamList, "Registration">
+    >();
   const handleInputChange = (text: string) => {
     setIput(text);
     if (validateEmail(input)) {
@@ -29,6 +37,7 @@ const Registration = () => {
     try {
       const sessionToken = await AsyncStorage.getItem("sessionToken");
       console.log("sessionToken ", sessionToken);
+      navigation.navigate("Login");
       if (!sessionToken) {
         setError(
           "Session likely expired. Please restart the registration process."
@@ -45,6 +54,7 @@ const Registration = () => {
 
       setValid(true);
       console.log("registration successful" + accessToken + refreshToken);
+      navigation.navigate("Home");
     } catch (error) {
       console.error("Error registering", error);
     }

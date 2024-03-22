@@ -9,17 +9,17 @@ export default function useCountdownTimer(
   initialSeconds: number
 ): CountdownTimerReturn {
   const [seconds, setSeconds] = useState(initialSeconds);
-  const [isTimerActive, setIsTimerActive] = useState(true);
+  const [disabled, setDisabled] = useState(true);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
 
-    if (seconds > 0 && isTimerActive) {
+    if (seconds > 0) {
       interval = setInterval(() => {
         setSeconds((prevSeconds) => prevSeconds - 1);
       }, 1000);
     } else {
-      setIsTimerActive(false);
+      setDisabled(false);
     }
 
     return () => {
@@ -27,10 +27,10 @@ export default function useCountdownTimer(
         clearInterval(interval);
       }
     };
-  }, [seconds, isTimerActive]);
+  }, [seconds, disabled]);
   const resetCounter = () => {
     setSeconds(initialSeconds);
-    setIsTimerActive(true);
+    setDisabled(true);
   };
-  return { seconds, resetCounter, disabled: !isTimerActive };
+  return { seconds, resetCounter, disabled };
 }

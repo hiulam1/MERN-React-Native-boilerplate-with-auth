@@ -1,26 +1,21 @@
-import {
-  Keyboard,
-  KeyboardAvoidingView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-} from "react-native";
-import { Text, View } from "@/components/Themed";
-import { useState } from "react";
+import { StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { Text, View } from "react-native";
+import React, { useState } from "react";
 import {
   checkPhoneIfValid,
   modifyInput,
   createUsableInput,
 } from "@/utils/validatePhone";
-import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
-import { RootStackParamList } from "../_layout";
 import {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from "@react-navigation/native-stack";
-import RegistrationLayout from "../RegistrationLayout";
+import RegistrationLayout from "./RegistrationLayout";
+import RegistrationButton from "@/components/registrationButton";
+import { RootStackParamList } from "./StackNavigator";
+import * as Haptics from "expo-haptics";
+import receiveOTP from "./api/auth/receiveOTPApi";
 
 const Login: React.FC<
   NativeStackScreenProps<RootStackParamList, "Login">
@@ -30,9 +25,11 @@ const Login: React.FC<
 
   const [input, setIput] = useState("");
   const [valid, setValid] = useState(false);
+  const [error, setError] = useState("" as string | null);
 
   const handleInputChange = (text: string) => {
     const isValid = checkPhoneIfValid(text);
+    Haptics.selectionAsync();
     const formattedInput = isValid ? modifyInput(text) : text;
     setIput(formattedInput);
     setValid(isValid);
@@ -42,13 +39,19 @@ const Login: React.FC<
     console.log("input" + input);
     const readyPhoneNumber = createUsableInput(input);
     console.log("phone number sent: " + readyPhoneNumber);
-    navigation.navigate("OTP", { phoneNumber: readyPhoneNumber });
     try {
-      await axios.post("http://localhost:3002/api/auth/send-otp", {
-        phoneNumber: readyPhoneNumber,
-      });
+      await receiveOTP(readyPhoneNumber);
+      navigation.navigate("OTP", { phoneNumber: readyPhoneNumber });
+      console.log("OTP sent");
+      setError(null);
     } catch (error) {
-      console.error("Error sending OTP", error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      if (error instanceof Error && error.hasOwnProperty("status")) {
+        console.error("Error sending OTP", (error as any).status);
+      } else {
+        console.error("Error sending OTP" + error);
+        setError("Server error, error sending OTP");
+      }
     }
   };
 
@@ -59,7 +62,7 @@ const Login: React.FC<
           Please log in with your phone number
         </Text>
 
-        <View className="flex-row items-center bg-transparent rounded-md ">
+        <View className="flex-row items-center bg-transparent rounded-md">
           <TouchableOpacity className="items-center justify-center ">
             <Text className="text-[20px] mx-4 mb-4 text-center text-white">
               +41
@@ -74,17 +77,14 @@ const Login: React.FC<
             }}
           ></TextInput>
         </View>
-        {/* when clicked, check mongodb for phone number, then send oTP */}
-        <TouchableOpacity
-          className="bg-white p-3 rounded-md"
+        {error ? <Text className="text-red-500">{error}</Text> : null}
+        <RegistrationButton
+          text={"Send OTP"}
+          onPress={handleSubmit}
           disabled={!valid}
-          onPress={() => handleSubmit()}
-          style={valid ? styles.buttonAbled : styles.buttonDisabled}
-        >
-          <Text style={valid ? { color: "black" } : { color: "white" }}>
-            Send OTP
-          </Text>
-        </TouchableOpacity>
+          buttonStyle={{}}
+          textStyle={{}}
+        />
       </View>
     </RegistrationLayout>
   );

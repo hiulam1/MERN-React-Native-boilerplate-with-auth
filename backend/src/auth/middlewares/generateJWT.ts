@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import "dotenv/config";
 
-export const generateToken = async (
+export const generateTokens = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -17,16 +17,25 @@ export const generateToken = async (
   }
 
   try {
-    const accessToken = jwt.sign({ id: req.userExists._id }, privateKey, {
-      expiresIn: "1h",
-      algorithm: "RS256",
-    });
+    const accessToken = jwt.sign(
+      { id: req.userExists._id, email: req.userExists.email },
+      privateKey,
+      {
+        expiresIn: "1h",
+        algorithm: "RS256",
+      }
+    );
     console.log("Access Token: ", accessToken);
-    const refreshToken = jwt.sign({ id: req.userExists._id }, privateKey, {
-      expiresIn: "7d",
-      algorithm: "RS256",
-    });
+    const refreshToken = jwt.sign(
+      { id: req.userExists._id, email: req.userExists.email },
+      privateKey,
+      {
+        expiresIn: "7d",
+        algorithm: "RS256",
+      }
+    );
     res.json({
+      userExists: req.userExists,
       accessToken: accessToken,
       refreshToken: refreshToken,
       message: "authentication successful",
