@@ -1,11 +1,15 @@
 import { Request, Response, NextFunction } from "express";
-import extractTokenFromHeader from "../utils/extractAccessToken.js";
 import redisClient from "../../services/redis.js";
+import { extractAccessToken } from "../services/authServices.js";
+import {
+  InternalServerError,
+  InvalidSessionError,
+} from "../../utils/ErrorClasses.js";
 
 declare global {
   namespace Express {
     interface Request {
-      userExists?: any;
+      userExists?: string;
       phoneNumber?: string;
     }
   }
@@ -16,13 +20,10 @@ export const verifyClientSession = async (
   res: Response,
   next: NextFunction
 ) => {
-  const sessionToken = extractTokenFromHeader(req);
+  const sessionToken = extractAccessToken(req);
 
   if (!sessionToken) {
-    return res.status(400).json({
-      success: false,
-      message: "Session token not in header.",
-    });
+    next(new InvalidSessionError("Session token not in header"));
   }
 
   // check token
@@ -37,13 +38,10 @@ export const verifyClientSession = async (
 
       next();
     } else {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid session token.",
-      });
+      next(new InvalidSessionError("Invalid session token"));
     }
   } catch (error) {
     console.error("Error checking session token:", error);
-    res.status(500).json({ message: "Failed to check session token" });
+    next(new InternalServerError());
   }
 };

@@ -1,27 +1,29 @@
 import { Request, Response, NextFunction } from "express";
-import extractAccessTokenFromHeader from "../utils/extractAccessToken.js";
 
-import redisClient from "../../services/redis.js";
+import {
+  extractAccessToken,
+  extractRefreshToken,
+  isTokenBlacklisted,
+} from "../services/authServices.js";
+import { AuthenticationError } from "../../utils/ErrorClasses.js";
 
 export const checkTokenBlacklist = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const accessToken = extractAccessTokenFromHeader(req);
-  const refreshToken = req.headers["x-refresh-token"] as string;
+  const accessToken = extractAccessToken(req);
+  const refreshToken = extractRefreshToken(req);
+  const accessTokenBlacklisted = accessToken
+    ? await isTokenBlacklisted(accessToken)
+    : false;
+  const refreshTokenBlacklisted = refreshToken
+    ? await isTokenBlacklisted(refreshToken)
+    : false;
   if (!accessToken && !refreshToken) {
-    return res.status(401).json({ message: "No access token provided." });
-  }
-  const isBlacklisted = await redisClient.get(`blacklist:${accessToken}`);
-  if (isBlacklisted) {
-    return res.status(401).json({ message: "Token has been revoked." });
-  }
-  const refreshIsBlacklisted = await redisClient.get(
-    `blacklist:${accessToken}`
-  );
-  if (refreshIsBlacklisted) {
-    return res.status(401).json({ message: "Token has been revoked." });
+    next(new AuthenticationError("No tokens provided."));
+  } else if (accessTokenBlacklisted || refreshTokenBlacklisted) {
+    next(new AuthenticationError("Token has been revoked."));
   }
   next();
 };

@@ -1,12 +1,15 @@
 import mongoose from "mongoose";
 import User from "../models/User.js";
 import { Request, Response, NextFunction } from "express";
-import redisClient from "../../services/redis.js";
-import extractTokenFromHeader from "../../auth/utils/extractAccessToken.js";
+import {
+  deleteSessionToken,
+  extractAccessToken,
+  verifySessionToken,
+} from "../../auth/services/authServices.js";
 declare global {
   namespace Express {
     interface Request {
-      userExists?: any;
+      userExists?: string;
     }
   }
 }
@@ -21,7 +24,7 @@ export const create = async (
     role?: string;
   };
 
-  const sessionToken = extractTokenFromHeader(req);
+  const sessionToken = extractAccessToken(req);
 
   if (!email || !sessionToken) {
     return res.status(400).json({
@@ -31,7 +34,7 @@ export const create = async (
   }
 
   try {
-    const sessionData = await redisClient.get(`session:${sessionToken}`);
+    const sessionData = await verifySessionToken(sessionToken);
     if (!sessionData) {
       return res.status(400).json({
         success: false,
@@ -47,9 +50,9 @@ export const create = async (
     });
 
     await user.save();
-    await redisClient.del(`session:${sessionToken}`);
+    await deleteSessionToken(sessionToken);
     console.log("user saved");
-    req.userExists = user;
+    req.userExists = user._id.toString();
     next();
   } catch (error) {
     res.status(500).json({

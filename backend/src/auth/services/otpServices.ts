@@ -23,10 +23,10 @@ export const verifyOTP = async (
 ): Promise<boolean> => {
   try {
     const verificationCheck = await client.verify.v2
-    .services(process.env.TWILIO_VERIFY_SERVICE_ID!)
-    .verificationChecks.create({ to: phoneNumber, code: otp });
-  console.log(verificationCheck.status);
-  return verificationCheck.status === "approved";
+      .services(process.env.TWILIO_VERIFY_SERVICE_ID!)
+      .verificationChecks.create({ to: phoneNumber, code: otp });
+    console.log(verificationCheck.status);
+    return verificationCheck.status === "approved";
   } catch (error) {
     console.error(`Error verifying code for ${phoneNumber}`, error);
     throw error;
